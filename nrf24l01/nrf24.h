@@ -200,19 +200,16 @@ typedef enum
 } nRF24_TXResult;
 
 // Addresses of the RX_PW_P# registers
-static const uint8_t nRF24_RX_PW_PIPE[6] =
-{
-nRF24_REG_RX_PW_P0,
-nRF24_REG_RX_PW_P1,
-nRF24_REG_RX_PW_P2,
-nRF24_REG_RX_PW_P3,
-nRF24_REG_RX_PW_P4,
-nRF24_REG_RX_PW_P5
-};
+static const uint8_t nRF24_RX_PW_PIPE[6] = {
+	nRF24_REG_RX_PW_P0,
+	nRF24_REG_RX_PW_P1,
+	nRF24_REG_RX_PW_P2,
+	nRF24_REG_RX_PW_P3,
+	nRF24_REG_RX_PW_P4,
+	nRF24_REG_RX_PW_P5 };
 
 // Addresses of the address registers
-static const uint8_t nRF24_ADDR_REGS[7] =
-{
+static const uint8_t nRF24_ADDR_REGS[7] = {
 nRF24_REG_RX_ADDR_P0,
 nRF24_REG_RX_ADDR_P1,
 nRF24_REG_RX_ADDR_P2,
@@ -223,33 +220,33 @@ nRF24_REG_TX_ADDR };
 
 typedef struct
 {
-	SPI_HandleTypeDef *hspi;	// SPI handle
-	GPIO_TypeDef *GPIO_Port;		// GPIO Port for CSN, CE and IRQ pins
+	SPI_HandleTypeDef *hspi;		// SPI handle
+	GPIO_TypeDef *CSN_Port; // GPIO Port for CSN
+	GPIO_TypeDef *CE_Port; 	// GPIO Port for CE
 	uint16_t CSN_Pin;
 	uint16_t CE_Pin;
-	uint16_t IRQ_Pin;
 } NRF24;
 
 #ifdef USE_HAL_DRIVER
 
 static inline void nRF24_CE_L(NRF24 *nrf24)
 {
-	HAL_GPIO_WritePin(nrf24->GPIO_Port, nrf24->CE_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(nrf24->CE_Port, nrf24->CE_Pin, GPIO_PIN_RESET);
 }
 
 static inline void nRF24_CE_H(NRF24 *nrf24)
 {
-	HAL_GPIO_WritePin(nrf24->GPIO_Port, nrf24->CE_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(nrf24->CE_Port, nrf24->CE_Pin, GPIO_PIN_SET);
 }
 
 static inline void nRF24_CSN_L(NRF24 *nrf24)
 {
-	HAL_GPIO_WritePin(nrf24->GPIO_Port, nrf24->CSN_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(nrf24->CSN_Port, nrf24->CSN_Pin, GPIO_PIN_RESET);
 }
 
 static inline void nRF24_CSN_H(NRF24 *nrf24)
 {
-	HAL_GPIO_WritePin(nrf24->GPIO_Port, nrf24->CSN_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(nrf24->CSN_Port, nrf24->CSN_Pin, GPIO_PIN_SET);
 }
 
 static inline uint8_t nRF24_LL_RW(NRF24 *nrf24, uint8_t data)
@@ -271,31 +268,31 @@ static inline void Delay_ms(uint32_t ms)
 #elif USE_FULL_LL_DRIVER
 
 static inline void nRF24_CE_L(NRF24 *nrf24) {
-    LL_GPIO_ResetOutputPin(nrf24->GPIO_Port, nrf24->CE_Pin);
+	LL_GPIO_ResetOutputPin(nrf24->CE_Port, nrf24->CE_Pin);
 }
 
 static inline void nRF24_CE_H(NRF24 *nrf24) {
-    LL_GPIO_SetOutputPin(nrf24->GPIO_Port, nrf24->CE_Pin);
+	LL_GPIO_SetOutputPin(nrf24->CE_Port, nrf24->CE_Pin);
 }
 
 static inline void nRF24_CSN_L(NRF24 *nrf24) {
-    LL_GPIO_ResetOutputPin(nrf24->GPIO_Port, nrf24->CSN_Pin);
+	LL_GPIO_ResetOutputPin(nrf24->CSN_Port, nrf24->CSN_Pin);
 }
 
 static inline void nRF24_CSN_H(NRF24 *nrf24) {
-    LL_GPIO_SetOutputPin(nrf24->GPIO_Port, nrf24->CSN_Pin);
+	LL_GPIO_SetOutputPin(nrf24->CSN_Port, nrf24->CSN_Pin);
 }
 
 
 static inline uint8_t nRF24_LL_RW(NRF24 *nrf24, uint8_t data) {
-    LL_SPI_SetRxFIFOThreshold(nrf24->hspi,LL_SPI_RX_FIFO_TH_QUARTER);
-    LL_SPI_Enable(nrf24->hspi);
-    // Wait until TX buffer is empty
-    while (LL_SPI_IsActiveFlag_BSY(nrf24->hspi));
-    while (!LL_SPI_IsActiveFlag_TXE(nrf24->hspi));
-    LL_SPI_TransmitData8(nrf24->hspi, data);
-    while (!LL_SPI_IsActiveFlag_RXNE(nrf24->hspi));
-    return LL_SPI_ReceiveData8(nrf24->hspi);
+	LL_SPI_SetRxFIFOThreshold(nrf24->hspi,LL_SPI_RX_FIFO_TH_QUARTER);
+	LL_SPI_Enable(nrf24->hspi);
+	// Wait until TX buffer is empty
+	while (LL_SPI_IsActiveFlag_BSY(nrf24->hspi));
+	while (!LL_SPI_IsActiveFlag_TXE(nrf24->hspi));
+	LL_SPI_TransmitData8(nrf24->hspi, data);
+	while (!LL_SPI_IsActiveFlag_RXNE(nrf24->hspi));
+	return LL_SPI_ReceiveData8(nrf24->hspi);
 }
 
 
@@ -306,7 +303,6 @@ static inline void Delay_ms(uint32_t ms) { LL_mDelay(ms); }
 #error LL or HAL support must be enabled
 
 #endif // USE_FULL_LL_DRIVER
-
 
 // Function prototypes
 void nRF24_Init(NRF24 *nrf24);
@@ -322,7 +318,7 @@ void nRF24_SetTXPower(NRF24 *nrf24, uint8_t tx_pwr);
 void nRF24_SetDataRate(NRF24 *nrf24, uint8_t data_rate);
 void nRF24_SetCRCScheme(NRF24 *nrf24, uint8_t scheme);
 void nRF24_SetRXPipe(NRF24 *nrf24, uint8_t pipe, uint8_t aa_state,
-		uint8_t payload_len);
+						uint8_t payload_len);
 void nRF24_ClosePipe(NRF24 *nrf24, uint8_t pipe);
 void nRF24_EnableAA(NRF24 *nrf24, uint8_t pipe);
 void nRF24_DisableAA(NRF24 *nrf24, uint8_t pipe);
@@ -343,17 +339,12 @@ void nRF24_FlushRX(NRF24 *nrf24);
 void nRF24_ClearIRQFlags(NRF24 *nrf24);
 void nRF24_ActivateFeatures(NRF24 *nrf24);
 void nRF24_WritePayload(NRF24 *nrf24, uint8_t *pBuf, uint8_t length);
-void nRF24_WriteAckPayload(NRF24 *nrf24, nRF24_RXResult pipe, char *payload,
-		uint8_t length);
+void nRF24_WriteAckPayload(NRF24 *nrf24, nRF24_RXResult pipe, char *payload, uint8_t length);
 nRF24_RXResult nRF24_ReadPayload(NRF24 *nrf24, uint8_t *pBuf, uint8_t *length);
-nRF24_RXResult nRF24_ReadPayloadDpl(NRF24 *nrf24, uint8_t *pBuf,
-		uint8_t *length);
-nRF24_TXResult nRF24_TransmitPacket(NRF24 *nrf24, uint8_t *pBuf, uint8_t length,
-		uint8_t timeout);
+nRF24_RXResult nRF24_ReadPayloadDpl(NRF24 *nrf24, uint8_t *pBuf, uint8_t *length);
+nRF24_TXResult nRF24_TransmitPacket(NRF24 *nrf24, uint8_t *pBuf, uint8_t length, uint8_t timeout);
 
 #define nRF24_RX_ON(pNRF24)   nRF24_CE_H(pNRF24);
 #define nRF24_RX_OFF(pNRF24)  nRF24_CE_L(pNRF24);
-
-
 
 #endif // __NRF24_H
